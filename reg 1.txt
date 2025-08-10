@@ -1,0 +1,146 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 16.07.2025 16:36:53
+// Design Name: 
+// Module Name: register_file
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module register_file(
+input logic clk,
+input logic reset,
+input logic write_en,
+input logic write_addr,
+input logic write_data,
+input logic read_addr1,
+input logic read_addr2,
+output logic read_data1,
+output logic read_data2
+  );
+  
+    logic [7:0] regfile [0:7];
+
+    
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            for (int i = 0; i < 8; i++)
+                regfile[i] <= 8'b0;
+        end
+        else if (write_en) begin
+            regfile[write_addr] <= write_data;
+        end
+    end
+
+    
+    assign read_data1 = regfile[read_addr1];
+    assign read_data2 = regfile[read_addr2];
+
+endmodule
+  
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 16.07.2025 16:57:26
+// Design Name: 
+// Module Name: tb_register_file
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+`timescale 1ns / 1ps
+module tb_register_file;
+
+    // Testbench signals
+    logic clk, reset;
+    logic write_en;
+    logic [2:0] write_addr, read_addr1, read_addr2;
+    logic [7:0] write_data;
+    logic [7:0] read_data1, read_data2;
+
+    // Instantiate DUT
+    register_file uut (
+        .clk(clk),
+        .reset(reset),
+        .write_en(write_en),
+        .write_addr(write_addr),
+        .write_data(write_data),
+        .read_addr1(read_addr1),
+        .read_addr2(read_addr2),
+        .read_data1(read_data1),
+        .read_data2(read_data2)
+    );
+
+    // Clock generation
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;  // 10 ns period
+    end
+
+    // Test procedure
+    initial begin
+        $display("------ Register File Test Start ------");
+
+        // Initialize
+        reset = 1; write_en = 0; write_addr = 0; write_data = 0;
+        read_addr1 = 0; read_addr2 = 0;
+        #10;
+
+        reset = 0; #10;
+
+        //  Check reset clears all registers
+        $display("[Test 1] After reset: R0=%0d, R1=%0d", read_data1, read_data2);
+
+        //  Write to R2 and R3
+        write_en = 1; write_addr = 3'b010; write_data = 8'd55; #10; // Write 55 to R2
+        write_addr = 3'b011; write_data = 8'd100; #10;             // Write 100 to R3
+        write_en = 0; #10;
+
+        //Read R2 and R3
+        read_addr1 = 3'b010; read_addr2 = 3'b011; #5;
+        $display("[Test 3] R2=%0d, R3=%0d", read_data1, read_data2);
+
+        //  Overwrite R2 with 200
+        write_en = 1; write_addr = 3'b010; write_data = 8'd200; #10;
+        write_en = 0;
+
+        // Read again R2 and R3
+        read_addr1 = 3'b010; read_addr2 = 3'b011; #5;
+        $display("[Test 5] R2=%0d, R3=%0d", read_data1, read_data2);
+
+       // Check write disable works
+        write_en = 0; write_addr = 3'b100; write_data = 8'd150; #10;
+        read_addr1 = 3'b100; #5;
+        $display("[Test 6] R4 (should still be 0) = %0d", read_data1);
+
+        $display("------ Register File Test Completed ------");
+        $finish;
+    end
+
+endmodule
+
